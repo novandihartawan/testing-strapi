@@ -1,7 +1,9 @@
 package com.example.materiapp
 
 import com.example.materiapp.model.CreateMateriRequest
+import com.example.materiapp.model.CreateMateriResponse
 import com.example.materiapp.model.MateriItem
+import com.example.materiapp.model.MateriResponse
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -13,25 +15,25 @@ import retrofit2.Response
 interface ApiService {
     // GET semua materi
     @GET("materis")
-    suspend fun getMateris(): List<MateriItem>
+    suspend fun getMateris(): MateriResponse
 
-    // POST materi baru
+    // POST materi baru Return CreateMateriResponse instead of Unit
     @POST("materis")
     suspend fun createMateri(
         @Body body: CreateMateriRequest
-    ): Response<Unit>
+    ): Response<CreateMateriResponse>
 
     // PUT (update) materi berdasarkan ID
-    @PUT("materis/{id}")
+    @PUT("materis/{documentId}")
     suspend fun updateMateri(
-        @Path("id") id: Int,
+        @Path("documentId") documentId: String,
         @Body body: CreateMateriRequest
     ): Response<Unit>
 
     // DELETE (hapus) materi
-    @DELETE("materis/{id}")
+    @DELETE("materis/{documentId}")
     suspend fun deleteMateri(
-        @Path("id") id: Int
+        @Path("documentId") documentId: String,
     ): Response<Unit>
 
 }

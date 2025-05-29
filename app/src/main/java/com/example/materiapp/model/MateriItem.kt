@@ -11,10 +11,12 @@ data class MateriResponse(
 )
 
 data class MateriItem(
+    val documentId: String,
     val id: Int,
     val judul: String,
     val deskripsi: String   // ❗️Jangan nullable
 )
+
 data class MaterAttributes(
     val judul: String,
     val deskripsi: String

@@ -1,10 +1,12 @@
 package com.example.materiapp
 
 import android.os.Bundle
+import android.service.notification.Condition.newId
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,48 +53,84 @@ fun MateriListScreen(
 fun CreateMateriScreen(
     existing: MateriItem? = null,
     onDone: () -> Unit
-) {
-    var judul by remember { mutableStateOf(existing?.judul ?: "") }
-    var deskripsi by remember { mutableStateOf(existing?.deskripsi ?: "") }
+){
+
+    var judul by remember { mutableStateOf("") }
+    var deskripsi by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
 
+
     Column(modifier = Modifier.padding(16.dp)) {
-        OutlinedTextField(value = judul, onValueChange = { judul = it }, label = { Text("Judul") })
+        OutlinedTextField(
+            value = judul,
+            onValueChange = { judul = it },
+            label = { Text("Judul") },
+            modifier = Modifier.fillMaxWidth()
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(value = deskripsi, onValueChange = { deskripsi = it }, label = { Text("Deskripsi") })
-        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = deskripsi,
+            onValueChange = { deskripsi = it },
+            label = { Text("Deskripsi") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        if (existing != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    scope.launch {
+                        val response = ApiClient.apiService.deleteMateri(existing.documentId)
+                        if (response.isSuccessful) {
+                            println("✅ DELETE SUCCESS")
+                            onDone()
+                        } else {
+                            println("❌ DELETE FAILED: ${response.code()} - ${response.errorBody()?.string()}")
+                        }
+                    }
+                }
+            ) {
+                Text("Hapus")
+            }
+        }
+
         Button(onClick = {
             scope.launch {
                 val body = CreateMateriRequest(MateriInput(judul, deskripsi))
 
                 if (existing != null) {
-                    val idToUpdate = existing.id
+                    val idToUpdate = existing.documentId
                     val response = ApiClient.apiService.updateMateri(idToUpdate, body)
                     if (response.isSuccessful) {
-                        println("✅ UPDATE SUCCESS")
+                    println("✅ UPDATE SUCCESS")
                     } else {
-                        println("❌ UPDATE FAILED: ${response.code()} - ${response.errorBody()?.string()}")
-                    }
-                    onDone()
+                    println("❌ UPDATE FAILED: ${response.code()} - ${response.errorBody()?.string()}")
+                        }
                 } else {
+                    // FIXED: Properly handle the CreateMateriResponse
                     val response = ApiClient.apiService.createMateri(body)
                     if (response.isSuccessful) {
-                        val newId = (response.body() as? CreateMateriResponse)?.data?.id
+                        val responseBody = response.body()
+                        println("🔍 RAW RESPONSE: $responseBody")
+                        println("🔍 RESPONSE CODE: ${response.code()}")
+                        println("🔍 RESPONSE HEADERS: ${response.headers()}")
+                        val newId = responseBody?.data?.id
                         println("✅ CREATED SUCCESSFULLY with ID: $newId")
                     } else {
-                        println("❌ CREATE FAILED: ${response.code()} - ${response.errorBody()?.string()}")
+                        println("❌ CREATE FAILED: ${response.code()}")
+                        println("🔍 ERROR BODY: ${response.errorBody()?.string()}")
                     }
                 }
-
                 onDone()
             }
-        })
-
-        {
-            Text(if (existing != null) "Update" else "Simpan")
+        }) {
+            Text("Simpan")
         }
     }
+
 }
+
+
 
 @Composable
 fun App() {
@@ -105,9 +143,9 @@ fun App() {
         if (!showForm) {
             scope.launch {
                 try {
-                    materiList = ApiClient.apiService.getMateris()
+                materiList = ApiClient.apiService.getMateris().data
                 } catch (e: Exception) {
-                    println("LOAD ERROR: ${e.localizedMessage}")
+                println("LOAD ERROR: ${e.localizedMessage}")
                 }
             }
         }
@@ -150,5 +188,5 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-   App()
+    MainActivity()
 }
